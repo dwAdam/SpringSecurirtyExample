@@ -14,7 +14,8 @@ import org.springframework.security.web.authentication.rememberme.JdbcTokenRepos
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-@Configuration @EnableWebSecurity
+@Configuration
+@EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	
 	@Autowired
@@ -25,7 +26,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 	
 	private final String  USERS_QUERY = "select email, password, active from user where email=?";
 	
-	private final String  ROLES_QUERY = "select u.email, r.role from user user u inner join user_role ur no"
+	private final String  ROLES_QUERY = "select u.email, r.role from user u inner join user_role ur on"
 			+ "(u.id = ur.user_id) inner join role r on (ur.role_id=r.role_id) where u.email=?";
 	
 	@Override
@@ -37,6 +38,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.passwordEncoder(bcpe);
 	}
 	
+	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests()
 			.antMatchers("/").permitAll()
@@ -45,20 +47,20 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 			.antMatchers("/home/**").hasAuthority("ADMIN").anyRequest()
 			.authenticated().and().csrf().disable()
 			.formLogin().loginPage("/login").failureUrl("/login?error=true")
-			.defaultSuccessUrl("home/home")
+			.defaultSuccessUrl("/home/home")
 			.usernameParameter("email")
 			.passwordParameter("password")
 			.and().logout()
 			.logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
 			.logoutSuccessUrl("/")
 			.and().rememberMe()
-			.tokenRepository(ptr())
+			.tokenRepository(persistentTokenRepository())
 			.tokenValiditySeconds(60*60)
 			.and().exceptionHandling().accessDeniedPage("/access_denied");
 	}
 	
 	@Bean
-	public PersistentTokenRepository ptr()  {
+	public PersistentTokenRepository persistentTokenRepository()  {
 		JdbcTokenRepositoryImpl db = new JdbcTokenRepositoryImpl();
 		db.setDataSource(dataSource);
 		
